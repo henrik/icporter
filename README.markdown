@@ -37,6 +37,7 @@ Some examples:
 
 ## TODO
 
+ * Decouple "framework" and ICA-specific code
  * Tidywork
 
 ## Credits and license
