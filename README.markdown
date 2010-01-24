@@ -14,13 +14,13 @@ The file format is e.g.
     750123-4567  
     1234
     
-The default path is `~/.ica_credentials`. If you want to use another path:
+The default path is `~/.ica_credentials`. If you want to use another path, specify this when you export:
 
     ./icporter.rb --credentials="~/.my_credentials"
 
 Personnummer and PIN are required arguments if you don't provide a credentials file.
 
-Month can be given as `0` for the current month, `1` for last month etc. Default is current month.
+Month can be given as e.g. `2010-01` or as `0` for the current month, `1` for last month etc. Default is current month.
 
 Account name or number can be provided. Otherwise it picks the first one.
 
