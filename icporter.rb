@@ -175,7 +175,7 @@ end
 
 if $0 == __FILE__
   DEFAULT_CREDENTIALS = "~/.ica_credentials"
-  DEFAULT_OUTPUT      = "~/Documents/icspenses/data"
+  DEFAULT_OUTPUT      = "~/Documents/icpenses/data"
   CHMOD               = 0700  # Only owner has access.
   
   opts = Trollop::options do
@@ -247,6 +247,8 @@ if $0 == __FILE__
   path = File.join(output, filename)
   data = {
     :account => account.to_json,
+    :from => from,
+    :to => unto,
     :transactions => outgoing.map { |t| t.to_json }
   }
   File.open(path, 'w') { |f| f.write data.to_json }
