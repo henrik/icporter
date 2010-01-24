@@ -28,14 +28,14 @@ class ICABanken
   end
   
 
-  class Transaction < Struct.new(:date, :amount, :details, :autogiro)
+  class Transaction < Struct.new(:date, :amount, :details, :direct_debit)
     
     def outgoing?
       amount < 0
     end
     
     def to_json
-      { :date => date, :amount => amount, :details => details, :autogiro => autogiro }
+      { :date => date, :amount => amount, :details => details, :direct_debit => direct_debit }
     end
   end
   
@@ -64,9 +64,9 @@ class ICABanken
         details = details.text
         raw_amount = amount.text
         amount = raw_amount.sub(',', '.').gsub(/[^\d.-]/, '').to_f
-        autogiro = raw_amount.include?('*')
+        direct_debit = raw_amount.include?('*')  # Autogiro.
         
-        Transaction.new(date, amount, details, autogiro)
+        Transaction.new(date, amount, details, direct_debit)
       end
     end
     

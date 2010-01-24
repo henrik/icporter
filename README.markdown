@@ -37,7 +37,6 @@ Some examples:
 
 ## TODO
 
- * Rename "autogiro" to something more international
  * Tidywork
 
 ## Credits and license
