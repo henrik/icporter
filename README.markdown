@@ -14,6 +14,10 @@ The file format is e.g.
     750123-4567  
     1234
     
+Set file permissions so only you can read it:
+
+    chmod 700 ~/.ica_credentials
+
 The default path is `~/.ica_credentials`. If you want to use another path, specify this when you export:
 
     ./icporter.rb --credentials="~/.my_credentials"
