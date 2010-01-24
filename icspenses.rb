@@ -1,3 +1,7 @@
+# ICspenses.
+# Parse ICA-banken transactions. To be used for expense tracking.
+# By Henrik Nyh <http://henrik.nyh.se> 2010-01-24 under the MIT license.
+
 require "rubygems"
 require "mechanize"
 
