@@ -19,17 +19,39 @@ class ICABanken
     end
   end
   
+  class Transaction < Struct.new(:date, :amount, :details, :autogiro)
+    def to_s
+      "#{date}: #{amount}#{"*" if autogiro} (#{details})"
+    end
+  end
+  
   class Account < Struct.new(:agent, :id, :number, :name)
     
-    def statement
-      page = self.agent.post(statement_url)
-      page.body
+    def statement(from, unto)
+      page = self.agent.get(statement_url(from, unto))
+      table = page.at('table.account-details tbody')
+      table.search('tr').map do |tr|
+        date, egiro, details, amount, balance = tr.search('td')
+        
+        date = Date.parse(date.text)
+        details = details.text
+        raw_amount = amount.text
+        amount = raw_amount.sub(',', '.').gsub(/[^\d.-]/, '').to_f
+        autogiro = raw_amount.include?('*')
+        
+        Transaction.new(date, amount, details, autogiro)
+      end
     end
     
   protected
   
-    def statement_url
-      "https://www.icabanken.se/Secure/MyEconomy/Accounts/AccountStatement.aspx?AccountId=#{id}"
+    def statement_url(from, unto)
+      from_date = from.strftime('%Y%m')
+      from_day  = from.strftime('%d')
+      unto_date = unto.strftime('%Y%m')
+      unto_day  = unto.strftime('%d')
+      "https://www.icabanken.se/Secure/MyEconomy/Accounts/AccountStatement.aspx?AccountId=#{id}&SortKey=date_Asc&" +
+        "lTrnPage=0&ABselRangeDt=#{unto_date}&ABselFromRangeDt=#{from_date}&FromDay=#{from_day}&ToDay=#{unto_day}"
     end
     
   end
@@ -107,12 +129,16 @@ if $0 == __FILE__
 
   ica = ICABanken.new(pnr, pwd)
   ica.login
-  ica.accounts.each do |account|
-    puts
-    puts "Account #{account.number} (#{account.name})"
-    puts
-    p account.statement
-    puts
+  
+  account = ica.accounts.find {|a| a.name == "Betalkort" }
+
+  puts
+  puts "Account #{account.number} (#{account.name})"
+  puts
+  transactions = account.statement(Date.new(2009,12,23), Date.today)
+  transactions.each do |transaction|
+    puts transaction
   end
+  puts
 
 end
