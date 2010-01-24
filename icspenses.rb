@@ -2,9 +2,9 @@
 # Parse ICA-banken transactions. Use for expense tracking.
 # By Henrik Nyh <http://henrik.nyh.se> 2010-01-24 under the MIT license.
 #
-# Under development. Provide personnummer and PIN as command-line arguments:
+# Under development. Provide personnummer, PIN and optional account name as command-line arguments:
 #
-#   ruby icspenses.rb 750123-4567 1234
+#   ruby icspenses.rb 750123-4567 1234[ "ICA KONTO"]
 
 require "rubygems"
 require "mechanize"
@@ -36,7 +36,7 @@ class ICABanken
     end
     
     def to_s
-      "#{date}: #{amount}#{"*" if autogiro} (#{details})"
+      details
     end
   end
   
@@ -149,6 +149,7 @@ if $0 == __FILE__
   
   pnr = ARGV[0]
   pwd = ARGV[1]
+  account_name = ARGV[2]
 
   customer = ICABanken::Customer.new(pnr, pwd)
   customer.login
@@ -156,7 +157,11 @@ if $0 == __FILE__
   puts "Logged in as customer #{pnr}."
   puts
   
-  account = customer.accounts.find {|a| a.name == "Betalkort" }
+  if account_name
+    account = customer.accounts.find {|a| a.name == account_name }
+  else
+    account = customer.accounts.first
+  end
 
   puts "Account #{account}"
   puts
@@ -170,39 +175,35 @@ if $0 == __FILE__
   end
   
   clusters = {
-    /\b(ICA|Coop|Prisxtra)\b/      => 'Groceries',
-    /\b(restaurang|Dalastugan)\b/i => 'Restaurant',
-    /\bI-tunes\b/i                 => 'iTunes',
+    /\b(ICA|Coop|Prisxtra|Vi T-snabben)\b/ => 'Groceries',
+    /\b(restaurang|Dalastugan)\b/i         => 'Restaurant',
+    /\bI-tunes\b/i                         => 'iTunes',
   }
   clusters.default = 'Other'
 
-  by_cluster = outgoing.inject(Hash.new {|h,k| h[k] = [] }) {|h,t|
-    key = clusters.keys.find {|re| t.details.match(re) }
-    cluster = clusters[key]
-    h[cluster] << t; h
-  }
-  by_details = outgoing.inject(Hash.new {|h,k| h[k] = [] }) {|h,t| h[t.details] << t; h }
-  by_date    = outgoing.inject(Hash.new {|h,k| h[k] = [] }) {|h,t| h[t.date] << t; h }
   
+  def group(transactions, label, &block)
+    puts "#{label}:"
+    
+    hash = transactions.inject(Hash.new {|h,k| h[k] = [] }) {|h,t|
+      g = block.call(t)
+      h[g] << t
+      h
+    }
+    
+    hash.to_a.sort_by {|k,a| a.map {|t| t.amount }.sum }.each do |group, ts|
+      puts " * #{group}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
+    end
+    puts
+  end
+
+    
+  group(outgoing, "By cluster") { |t| clusters[ clusters.keys.find {|re| t.details.match(re) } ] }
+  group(outgoing, "By recipient") { |t| t.details }
+  group(outgoing, "By date") { |t| t.date }
+  group(outgoing, "All") { |t| t }
+
   sum = outgoing.inject(0) {|s,t| s -= t.amount }
-  
-  puts "By cluster:"
-  by_cluster.each do |cluster, ts|
-    puts "#{cluster}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
-  end
-
-  
-  puts "By recipient:"
-  by_details.each do |detail, ts|
-    puts "#{detail}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
-  end  
-
-  puts "By date:"
-  by_date.each do |date, ts|
-    puts "#{date}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
-  end
-
-  
   puts "Total: #{sum}"
-
+  
 end
