@@ -1,5 +1,5 @@
-# ICspenses.
-# Parse ICA-banken transactions. To be used for expense tracking.
+# ICtractor/ICspenses.
+# Parse ICA-banken transactions. Use for expense tracking.
 # By Henrik Nyh <http://henrik.nyh.se> 2010-01-24 under the MIT license.
 #
 # Under development. Provide personnummer and PIN as command-line arguments:
@@ -30,6 +30,11 @@ class ICABanken
   
 
   class Transaction < Struct.new(:date, :amount, :details, :autogiro)
+    
+    def outgoing?
+      amount < 0
+    end
+    
     def to_s
       "#{date}: #{amount}#{"*" if autogiro} (#{details})"
     end
@@ -156,9 +161,48 @@ if $0 == __FILE__
   puts "Account #{account}"
   puts
   transactions = account.statement(Date.new(2010,1,1), Date.today)
-  transactions.each do |transaction|
-    puts transaction
+  outgoing = transactions.select {|t| t.outgoing? }
+  
+  class Array
+    def sum
+      inject(0) {|s,i| s += i }
+    end
   end
-  puts
+  
+  clusters = {
+    /\b(ICA|Coop|Prisxtra)\b/      => 'Groceries',
+    /\b(restaurang|Dalastugan)\b/i => 'Restaurant',
+    /\bI-tunes\b/i                 => 'iTunes',
+  }
+  clusters.default = 'Other'
+
+  by_cluster = outgoing.inject(Hash.new {|h,k| h[k] = [] }) {|h,t|
+    key = clusters.keys.find {|re| t.details.match(re) }
+    cluster = clusters[key]
+    h[cluster] << t; h
+  }
+  by_details = outgoing.inject(Hash.new {|h,k| h[k] = [] }) {|h,t| h[t.details] << t; h }
+  by_date    = outgoing.inject(Hash.new {|h,k| h[k] = [] }) {|h,t| h[t.date] << t; h }
+  
+  sum = outgoing.inject(0) {|s,t| s -= t.amount }
+  
+  puts "By cluster:"
+  by_cluster.each do |cluster, ts|
+    puts "#{cluster}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
+  end
+
+  
+  puts "By recipient:"
+  by_details.each do |detail, ts|
+    puts "#{detail}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
+  end  
+
+  puts "By date:"
+  by_date.each do |date, ts|
+    puts "#{date}: #{ts.map {|t| -t.amount }.sum} (#{ts.length})"
+  end
+
+  
+  puts "Total: #{sum}"
 
 end
