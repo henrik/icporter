@@ -4,10 +4,11 @@ require "mechanize"
 class ICABanken
 
   class LoginError < StandardError
-    attr_reader :code
-    def initialize(code)
+    attr_reader :code, :html
+    def initialize(code, text=nil)
       @code = code
-      super("Error code #{@code}")
+      @text = text
+      super("Error code #{@code}: #{@text}")
     end
   end
 
@@ -18,9 +19,22 @@ class ICABanken
     end
   end
   
-  class Account < Struct.new(:id, :number, :name)
+  class Account < Struct.new(:agent, :id, :number, :name)
+    
+    def statement
+      page = self.agent.post(statement_url)
+      page.body
+    end
+    
+  protected
+  
+    def statement_url
+      "https://www.icabanken.se/Secure/MyEconomy/Accounts/AccountStatement.aspx?AccountId=#{id}"
+    end
+    
   end
   
+
   def initialize(pnr, pwd)
     @pnr = pnr
     @pwd = pwd
@@ -33,12 +47,17 @@ class ICABanken
     check_for_errors!
     submit_login_form
     discover_accounts
-    p @accounts
     
   rescue DoubleSessionError
     may_retry = !@has_retried
     @has_retried = true
     may_retry ? retry : raise
+  rescue LoginError => e
+    puts e.message
+  end
+  
+  def accounts
+    @accounts
   end
   
 protected
@@ -54,7 +73,7 @@ protected
     if error_code == DoubleSessionError::CODE
       raise DoubleSessionError.new
     elsif error_code
-      raise LoginError.new(error_code)
+      raise LoginError.new(error_code, @page.at('title').text.strip)
     end
   end
   
@@ -74,7 +93,7 @@ protected
       number = link.text
       name   = tr.css('td')[1].text
       
-      Account.new(id, number, name)
+      Account.new(@agent, id, number, name)
     end
   end
   
@@ -88,5 +107,12 @@ if $0 == __FILE__
 
   ica = ICABanken.new(pnr, pwd)
   ica.login
+  ica.accounts.each do |account|
+    puts
+    puts "Account #{account.number} (#{account.name})"
+    puts
+    p account.statement
+    puts
+  end
 
 end
