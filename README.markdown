@@ -8,7 +8,7 @@ Feel free to write your own ICporter-compatible exporters or analyzers.
 
 ## Usage
 
-If you don't want to reveal your credentials in the command argument, put them in a file.
+If you don't want to reveal your credentials in the command-line arguments, put them in a file.
 The file format is e.g.
 
     750123-4567  
