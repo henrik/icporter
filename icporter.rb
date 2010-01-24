@@ -6,8 +6,6 @@
 require "rubygems"
 require "mechanize"
 require "trollop"  # Option parser.
-require "json"
-
 
 class ICABanken
 
@@ -34,16 +32,16 @@ class ICABanken
       amount < 0
     end
     
-    def to_json
-      { :date => date, :amount => amount, :details => details, :direct_debit => direct_debit }
+    def serialize
+      { 'date' => date, 'amount' => amount, 'details' => details, 'direct_debit' => direct_debit }
     end
   end
   
 
   class Account < Struct.new(:agent, :id, :number, :name)
     
-    def to_json
-      { :number => number, :name => name }
+    def serialize
+      { 'number' => number, 'name' => name }
     end
     
     def numbered?(number)
@@ -222,15 +220,15 @@ if $0 == __FILE__
   transactions = account.statement(from, unto)
   outgoing = transactions.select {|t| t.outgoing? }
   
-  filename = "#{from.strftime('%Y-%m')}_#{account.number.gsub(' ', '_')}.json"
+  filename = "#{from.strftime('%Y-%m')}_#{account.number.gsub(' ', '_')}.yml"
   path = File.join(output, filename)
   data = {
-    :account => account.to_json,
-    :from => from,
-    :to => unto,
-    :transactions => outgoing.map { |t| t.to_json }
+    'account' => account.serialize,
+    'from' => from,
+    'to' => unto,
+    'transactions' => outgoing.map { |t| t.serialize }
   }
-  File.open(path, 'w') { |f| f.write data.to_json }
+  File.open(path, 'w') { |f| f.write YAML.dump(data) }
   File.chmod(CHMOD, path)
 
   puts path

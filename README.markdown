@@ -1,6 +1,6 @@
 # ICporter
 
-Exports ICA-banken bank transactions as JSON files on disk.
+Exports ICA-banken bank transactions as YAML files on disk.
 
 The exported files can be analyzed with [ICpenses](http://github.com/henrik/icpenses) to provide expense analysis.
 
