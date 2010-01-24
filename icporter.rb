@@ -1,28 +1,7 @@
+#!/usr/bin/env ruby
+#
 # ICporter. Exports ICA-banken transactions as JSON files on disk.
-# The exported files can be analyzed with ICpenses.
 # By Henrik Nyh <http://henrik.nyh.se> 2010-01-24 under the MIT license.
-#
-# Feel free to write ICspenses compatible exporters for other banks.
-# Suggested naming is e.g. "icporter-nordea".
-#
-#
-# USAGE
-#
-# If you don't want to reveal your credentials in the command argument, put them in a file.
-# The file format is e.g. "750123-4567\n1234". Default path is "~/.ica_credentials".
-#
-#   ruby icporter.rb --credentials="~/.my_credentials"
-#
-# Personnummer and PIN are required arguments if you don't provide a credentials file.
-# Month can be given as 0 for the current month, -1 for last month etc. Default is current month.
-# Account name or number can be provided. Otherwise it picks the first one.
-# Output directory defaults to "~/icpenses/data". The directory is created if it doesn't exist.
-#
-#   ruby icporter.rb --pnr=750123-4567 --pin=1234 --month=0
-#   ruby icporter.rb --pnr=750123-4567 --pin=1234 --month=-1
-#   ruby icporter.rb --pnr=750123-4567 --pin=1234 --month=2010-01
-#   ruby icporter.rb --pnr=750123-4567 --pin=1234 --account="Betalkort"
-#   ruby icporter.rb --pnr=750123-4567 --pin=1234 --output="/tmp/data"
 
 require "rubygems"
 require "mechanize"
@@ -180,10 +159,10 @@ if $0 == __FILE__
   
   opts = Trollop::options do
     opt :credentials, "Credentials file path", :default => DEFAULT_CREDENTIALS
-    opt :pnr,         "Personnummer"
-    opt :pin,         "PIN"
-    opt :month,       "Month (e.g. 2010-01, or 0 for this month, -1 for last etc)", :default => 0
-    opt :account,     "Optional account number or name"
+    opt :pnr,         "Personnummer", :type => String
+    opt :pin,         "PIN", :type => String
+    opt :month,       "Month (e.g. 2010-01, or 0 for this month, -1 for last etc)", :default => '0'
+    opt :account,     "Optional account number or name", :type => String
     opt :output,      "Output directory", :default => DEFAULT_OUTPUT
   end
   
@@ -254,5 +233,5 @@ if $0 == __FILE__
   File.open(path, 'w') { |f| f.write data.to_json }
   File.chmod(CHMOD, path)
 
-  puts "Wrote #{path}."
+  puts path
 end
